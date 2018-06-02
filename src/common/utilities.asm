@@ -44,23 +44,19 @@ delay_10ms ; W * 10ms delay
 
     banksel kk ; may be in the shared data section, but just to be safe.
     movwf   kk
-    movlw   low d'57143'
+d_l_back
+    movlw   low d'2300'
     movwf   ii
-    movlw   d'57143' / d'256'
+    movlw   d'2300' / d'256'
     movwf   jj
 
 delay_loop
-    nop
-    nop
-    nop
-    nop
-    nop
     decfsz  ii,F
     bra     delay_loop
     decfsz  jj,F
     bra     delay_loop
     decfsz  kk,F
-    bra     delay_loop
+    bra     d_l_back
     return
 
 ; ***************** string operations *********************

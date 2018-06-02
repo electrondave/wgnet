@@ -21,6 +21,8 @@
     errorlevel -302; disable bankswitch warning
 
 #include "p16f15324.inc"
+#include    "../../src/common/forth.inc"
+    extern  forth_temp1, forth_temp2, forth_temp3, forth_temp4
 #include "../../src/common/q_macros.inc"
 
 ; *******************
@@ -28,6 +30,7 @@
     constant LED = 5
     extern delay_10ms
 
+    global  InitUART1
     global  InitUART2
     global  IRQ_UART1_rx
 
@@ -53,6 +56,18 @@ netRxPktCntr    res 1
 ; * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 InitUART1:      ; network data com port
 ; * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    ; RC0 is TX2
+    ; RC1 is RX2
+    banksel TRISC
+    bcf TRISC,4 ; RC4 is TX1 so make it output
+    bsf TRISC,5 ; RC5 is RX1 of make it input
+
+    banksel PMD0
+    bcf     PMD0, SYSCMD    ; enable Fosc to Peripherals
+
+    banksel PMD4    ; enable the UART1
+    bcf     PMD4, UART1MD
+
 
     banksel TX1STA
 ; TXxSTA: CSRC = 1 TX9 = 0 TXEN = 1 SYNC = 0 SENDB = 0 BRGH = 1  TRMT = 0 TX9D = 0
@@ -87,6 +102,64 @@ InitUART1:      ; network data com port
     movlw   0x69
     movwf   SP1BRGL
 
+; @@@@@@@@@@@@@@@@@@@@@@@
+; ook modulator setup
+    banksel PMD5            ; turn on CLC1 first so it can be configured!
+    bcf     PMD5, CLC1MD    ; low = enable
+
+    banksel CLC1POL
+    movlf   b'00001100', CLC1POL ; invert the unused inputs for the 'and4' to have 1's on unused inputs
+
+    banksel CLC1SEL0
+    movlf   d'31',  CLC1SEL0    ; UART 1 TX = 31
+    movlf   d'4',   CLC1SEL1    ; fosc
+    movlf   d'31',  CLC1SEL2    ; last two inputs are don't care
+    movwf           CLC1SEL3
+
+    ; choose the true or false of the input choices.  These are all 'ored' together so only one is necessary
+    movlf   h'01',  CLC1GLS0    ; select the invert of uart
+    movlf   h'08',  CLC1GLS1    ; select the true of fosc
+    clrf            CLC1GLS2
+    clrf            CLC1GLS3
+    movlf   h'82',  CLC1CON
+
+    banksel RC4PPS
+    movlf   h'01',  RC4PPS      ; select CLC1OUT;
+
+;
+;    //RC1REG is where the receive data is read
+;    //TX1REG is where the tx data is written
+
+; fixme todo and all that
+; this debug code tromps on many I/O that this routine should not touch!
+    banksel ANSELC
+    clrw
+    movwf   ANSELC
+
+    banksel TRISC
+    movlw   b'00100010'
+    movwf   TRISC
+
+; Note that the TX1IF will be set anytime the transmitter can accept a new character
+; Note that it will be set now...
+; Also the TX1STA, b1 will be set after this so we have to transmit a garbage byte to init the uart
+IU_big_loop
+    banksel TX1REG
+    movlw   'U'
+    movwf   TX1REG
+
+InitUART1_loop_1
+    nop
+    banksel PIR3
+    btfss   PIR3,TX1IF ; transmitting?
+    bra InitUART1_loop_1
+
+    movlw   h'10'
+    lcall   delay_10ms
+
+    bra IU_big_loop
+
+; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     return
 
 ; * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

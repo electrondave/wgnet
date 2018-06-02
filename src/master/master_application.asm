@@ -51,10 +51,10 @@ InitApp
     lcall   PushSched
 
     ; schedule a test appointment
-    Pushl   J_TEST
-    Pushl   7
-    Pushl   0
-    lcall   PushSched
+;    Pushl   J_TEST
+;    Pushl   7
+;    Pushl   0
+;    lcall   PushSched
     return
 
 RunNextJob ; (in the processing any params would be then pulled and used as it moves along...)

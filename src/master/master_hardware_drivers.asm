@@ -35,6 +35,7 @@
 
     global  DisablePeripherals
     global  InitHardware
+    extern  InitUART1
     extern  InitUART2
 
     extern  GetTime
@@ -56,6 +57,7 @@ DisablePeripherals
     ; Peripheral module disables
     banksel PMD0
     movlw   h'ff'
+; for debug turn them all on FIXME TODO
     movwf   PMD0
     movwf   PMD1
     movwf   PMD2
@@ -69,6 +71,7 @@ InitHardware
     lcall   InitOSC
 
     lcall   InitGPIOs
+    lcall   InitUART1
     lcall   InitUART2
     lcall   InitTOD_Timer
 

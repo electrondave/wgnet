@@ -60,7 +60,7 @@ J_Send_net_pulse
     ; schedule a recurring  appointment
     Pushl   J_SEND_NET_PULSE   ; job id
     lcall   GetTime
-    Pushl   d'5'   ; LSB time
+    Pushl   d'2'   ; LSB time
     Pushl   0   ; MSB time
     D_Add
     lcall   PushSched
